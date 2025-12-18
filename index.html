@@ -3,27 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - Picker Mode</title>
+    <title>Pro Sudoku - Smart Picker</title>
     <style>
         :root {
-            /* Light Theme */
             --bg-body: #f8f9fa;
             --bg-card: #ffffff;
             --text-main: #212529;
             --grid-border: #343a40;
             --cell-border: #dee2e6;
             --thick-weight: 2px; 
-            
-            /* Highlighting */
             --hl-lane: #e8f0fe; 
             --hl-match: #c2dbff;
             --hl-selected: #7fb5ff;
-            --hl-picker: #ffecb3; /* Yellow tint for picker mode */
-            
-            /* Numbers */
+            --hl-picker: #ffecb3;
             --val-fixed: #000000;
             --val-user: #0056b3;
             --val-error: #e63946;
+            --disabled: #e9ecef;
         }
 
         [data-theme='dark'] {
@@ -39,167 +35,55 @@
             --val-fixed: #ffffff;
             --val-user: #4dabf7;
             --val-error: #ff6b6b;
+            --disabled: #2c2c2c;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin: 0;
-            padding: 10px;
+            margin: 0; padding: 10px;
             transition: background 0.3s ease;
             user-select: none;
         }
 
-        .header {
-            display: flex;
-            width: 100%;
-            max-width: 450px;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .theme-btn { background: none; border: 1px solid var(--cell-border); color: var(--text-main); padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; }
 
-        .theme-btn {
-            background: none;
-            border: 1px solid var(--cell-border);
-            color: var(--text-main);
-            padding: 5px 12px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
-        /* Toggle Switch Styling */
-        .picker-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 15px;
-            background: var(--bg-card);
-            padding: 8px 16px;
-            border-radius: 20px;
-            border: 1px solid var(--cell-border);
-        }
-
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 34px;
-            height: 20px;
-        }
-
+        .picker-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px; background: var(--bg-card); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--cell-border); }
+        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 14px; width: 14px;
-            left: 3px; bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: var(--val-user); }
         input:checked + .slider:before { transform: translateX(14px); }
 
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .controls label {
-            cursor: pointer;
-            font-size: 14px;
-            padding: 6px 12px;
-            border-radius: 15px;
-            background: var(--bg-card);
-            border: 1px solid var(--cell-border);
-        }
-
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; }
+        .controls label { cursor: pointer; font-size: 14px; padding: 6px 12px; border-radius: 15px; background: var(--bg-card); border: 1px solid var(--cell-border); }
         .controls input:checked + span { color: var(--val-user); font-weight: bold; }
 
-        #grid {
-            display: grid;
-            grid-template-columns: repeat(9, clamp(35px, 10vw, 50px));
-            grid-template-rows: repeat(9, clamp(35px, 10vw, 50px));
-            border: var(--thick-weight) solid var(--grid-border);
-            background-color: var(--grid-border);
-            gap: 1px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .cell {
-            background-color: var(--bg-card);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: 400;
-            cursor: pointer;
-        }
-
+        #grid { display: grid; grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); grid-template-rows: repeat(9, clamp(35px, 10vw, 50px)); border: var(--thick-weight) solid var(--grid-border); background-color: var(--grid-border); gap: 1px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .cell { background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 400; cursor: pointer; }
         .cell:nth-child(3n) { border-right: var(--thick-weight) solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
-        #grid > div:nth-child(n+19):nth-child(-n+27),
-        #grid > div:nth-child(n+46):nth-child(-n+54) {
-            border-bottom: var(--thick-weight) solid var(--grid-border);
-        }
+        #grid > div:nth-child(n+19):nth-child(-n+27), #grid > div:nth-child(n+46):nth-child(-n+54) { border-bottom: var(--thick-weight) solid var(--grid-border); }
 
         .hl-lane { background-color: var(--hl-lane); }
         .hl-match { background-color: var(--hl-match) !important; }
         .selected { background-color: var(--hl-selected) !important; }
-        .picker-active { background-color: var(--hl-picker) !important; }
 
         .readonly { color: var(--val-fixed); font-weight: 700; }
         .user-correct { color: var(--val-user); }
         .user-error { color: var(--val-error); }
 
-        .numpad {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-top: 25px;
-            width: 100%;
-            max-width: 450px;
-        }
-
-        .num-btn {
-            background: var(--bg-card);
-            color: var(--text-main);
-            padding: 15px 0;
-            border-radius: 8px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            border: 1px solid var(--cell-border);
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .num-btn.active-num {
-            background-color: var(--val-user);
-            color: white;
-            border-color: var(--val-user);
-        }
-
-        .num-btn:active { transform: scale(0.95); opacity: 0.8; }
-        .num-btn.clear { color: var(--val-error); }
+        .numpad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 25px; width: 100%; max-width: 450px; }
+        .num-btn { background: var(--bg-card); color: var(--text-main); padding: 15px 0; border-radius: 8px; font-size: 1.2rem; font-weight: 600; border: 1px solid var(--cell-border); text-align: center; cursor: pointer; transition: all 0.2s; }
+        .num-btn.active-num { background-color: var(--val-user); color: white; border-color: var(--val-user); }
+        .num-btn.completed { background-color: var(--disabled); color: #999; border-color: var(--cell-border); cursor: not-allowed; opacity: 0.5; pointer-events: none; }
+        .num-btn:active:not(.completed) { transform: scale(0.95); }
     </style>
 </head>
 <body data-theme="light">
@@ -225,7 +109,7 @@
 
     <div id="grid"></div>
 
-    <div class="numpad">
+    <div class="numpad" id="numpad">
         <div class="num-btn" id="btn-1" onclick="handleNumInput(1)">1</div>
         <div class="num-btn" id="btn-2" onclick="handleNumInput(2)">2</div>
         <div class="num-btn" id="btn-3" onclick="handleNumInput(3)">3</div>
@@ -260,16 +144,8 @@
             updateNumpadUI();
         }
 
-        function updateNumpadUI() {
-            document.querySelectorAll('.num-btn').forEach(btn => btn.classList.remove('active-num'));
-            if (isPickerMode && heldNumber) {
-                const activeBtn = document.getElementById(`btn-${heldNumber}`);
-                if (activeBtn) activeBtn.classList.add('active-num');
-            }
-        }
-
         function clearHighlights() {
-            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match', 'picker-active'));
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match'));
         }
 
         function saveGame() {
@@ -362,24 +238,47 @@
                 div.onclick = () => onCellClick(div);
                 grid.appendChild(div);
             });
+            updateNumpadUI();
+        }
+
+        function updateNumpadUI() {
+            const counts = {};
+            for (let i = 1; i <= 9; i++) counts[i] = 0;
+
+            document.querySelectorAll('.cell').forEach(cell => {
+                const val = parseInt(cell.innerText);
+                const r = cell.dataset.r, c = cell.dataset.c;
+                if (val && val == solution[r][c]) {
+                    counts[val]++;
+                }
+            });
+
+            for (let i = 1; i <= 9; i++) {
+                const btn = document.getElementById(`btn-${i}`);
+                btn.classList.remove('active-num', 'completed');
+                if (counts[i] === 9) {
+                    btn.classList.add('completed');
+                    if (heldNumber === i) heldNumber = null;
+                } else if (isPickerMode && heldNumber === i) {
+                    btn.classList.add('active-num');
+                }
+            }
         }
 
         function onCellClick(cell) {
             if (isPickerMode) {
-                if (cell.classList.contains('readonly')) {
-                    // Pick the number from a fixed cell
-                    heldNumber = parseInt(cell.innerText);
-                    updateNumpadUI();
-                    highlight(cell);
+                if (cell.classList.contains('readonly') || (cell.innerText !== "" && cell.classList.contains('user-correct'))) {
+                    const clickedVal = parseInt(cell.innerText);
+                    const btn = document.getElementById(`btn-${clickedVal}`);
+                    if (btn && !btn.classList.contains('completed')) {
+                        heldNumber = clickedVal;
+                    }
                 } else if (heldNumber !== null) {
-                    // Fill an empty/user cell with the held number
                     inputNumberIntoCell(cell, heldNumber);
-                } else {
-                    highlight(cell);
                 }
-            } else {
-                highlight(cell);
             }
+            highlight(cell);
+            updateNumpadUI();
         }
 
         function highlight(cell) {
@@ -394,12 +293,16 @@
         }
 
         function handleNumInput(n) {
-            if (isPickerMode) {
-                heldNumber = n === 0 ? null : n;
-                updateNumpadUI();
+            if (isPickerMode && n !== 0) {
+                const btn = document.getElementById(`btn-${n}`);
+                if (!btn.classList.contains('completed')) {
+                    heldNumber = n;
+                }
             } else if (selectedCell) {
                 inputNumberIntoCell(selectedCell, n);
             }
+            updateNumpadUI();
+            if (selectedCell) highlight(selectedCell);
         }
 
         function inputNumberIntoCell(cell, n) {
@@ -407,16 +310,14 @@
             const r = cell.dataset.r, c = cell.dataset.c;
             if (n === 0) {
                 cell.innerText = '';
-                cell.classList.remove('user-correct', 'user-error');
+                cell.className = 'cell selected';
                 playSound(200);
             } else {
+                const isCorrect = (n == solution[r][c]);
                 cell.innerText = n;
-                const correct = (n == solution[r][c]);
-                cell.classList.remove('user-correct', 'user-error');
-                cell.classList.add(correct ? 'user-correct' : 'user-error');
-                playSound(correct ? 600 : 150);
+                cell.className = `cell selected ${isCorrect ? 'user-correct' : 'user-error'}`;
+                playSound(isCorrect ? 600 : 150);
             }
-            highlight(cell);
             saveGame();
         }
 
