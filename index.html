@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - Auto Save</title>
+    <title>Pro Sudoku - Picker Mode</title>
     <style>
         :root {
-            /* Light Theme Variables */
+            /* Light Theme */
             --bg-body: #f8f9fa;
             --bg-card: #ffffff;
             --text-main: #212529;
@@ -18,6 +18,7 @@
             --hl-lane: #e8f0fe; 
             --hl-match: #c2dbff;
             --hl-selected: #7fb5ff;
+            --hl-picker: #ffecb3; /* Yellow tint for picker mode */
             
             /* Numbers */
             --val-fixed: #000000;
@@ -34,6 +35,7 @@
             --hl-lane: #2c3e50;
             --hl-match: #34495e;
             --hl-selected: #1a5fb4;
+            --hl-picker: #5d4037;
             --val-fixed: #ffffff;
             --val-user: #4dabf7;
             --val-error: #ff6b6b;
@@ -71,10 +73,55 @@
             font-size: 12px;
         }
 
+        /* Toggle Switch Styling */
+        .picker-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            background: var(--bg-card);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--cell-border);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 34px;
+            height: 20px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px; width: 14px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--val-user); }
+        input:checked + .slider:before { transform: translateX(14px); }
+
         .controls {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .controls label {
@@ -86,10 +133,7 @@
             border: 1px solid var(--cell-border);
         }
 
-        .controls input:checked + span {
-            color: var(--val-user);
-            font-weight: bold;
-        }
+        .controls input:checked + span { color: var(--val-user); font-weight: bold; }
 
         #grid {
             display: grid;
@@ -109,7 +153,6 @@
             font-size: 1.5rem;
             font-weight: 400;
             cursor: pointer;
-            transition: background-color 0.05s;
         }
 
         .cell:nth-child(3n) { border-right: var(--thick-weight) solid var(--grid-border); }
@@ -122,6 +165,7 @@
         .hl-lane { background-color: var(--hl-lane); }
         .hl-match { background-color: var(--hl-match) !important; }
         .selected { background-color: var(--hl-selected) !important; }
+        .picker-active { background-color: var(--hl-picker) !important; }
 
         .readonly { color: var(--val-fixed); font-weight: 700; }
         .user-correct { color: var(--val-user); }
@@ -148,6 +192,12 @@
             cursor: pointer;
         }
 
+        .num-btn.active-num {
+            background-color: var(--val-user);
+            color: white;
+            border-color: var(--val-user);
+        }
+
         .num-btn:active { transform: scale(0.95); opacity: 0.8; }
         .num-btn.clear { color: var(--val-error); }
     </style>
@@ -165,29 +215,37 @@
         <label><input type="radio" name="diff" value="expert" onchange="newGame()"> <span>Expert</span></label>
     </div>
 
+    <div class="picker-toggle">
+        <span>Picker Mode</span>
+        <label class="switch">
+            <input type="checkbox" id="pickerModeToggle" onchange="togglePickerMode()">
+            <span class="slider"></span>
+        </label>
+    </div>
+
     <div id="grid"></div>
 
     <div class="numpad">
-        <div class="num-btn" onclick="inputNumber(1)">1</div>
-        <div class="num-btn" onclick="inputNumber(2)">2</div>
-        <div class="num-btn" onclick="inputNumber(3)">3</div>
-        <div class="num-btn" onclick="inputNumber(4)">4</div>
-        <div class="num-btn" onclick="inputNumber(5)">5</div>
-        <div class="num-btn" onclick="inputNumber(6)">6</div>
-        <div class="num-btn" onclick="inputNumber(7)">7</div>
-        <div class="num-btn" onclick="inputNumber(8)">8</div>
-        <div class="num-btn" onclick="inputNumber(9)">9</div>
-        <div class="num-btn clear" onclick="inputNumber(0)">⌫</div>
+        <div class="num-btn" id="btn-1" onclick="handleNumInput(1)">1</div>
+        <div class="num-btn" id="btn-2" onclick="handleNumInput(2)">2</div>
+        <div class="num-btn" id="btn-3" onclick="handleNumInput(3)">3</div>
+        <div class="num-btn" id="btn-4" onclick="handleNumInput(4)">4</div>
+        <div class="num-btn" id="btn-5" onclick="handleNumInput(5)">5</div>
+        <div class="num-btn" id="btn-6" onclick="handleNumInput(6)">6</div>
+        <div class="num-btn" id="btn-7" onclick="handleNumInput(7)">7</div>
+        <div class="num-btn" id="btn-8" onclick="handleNumInput(8)">8</div>
+        <div class="num-btn" id="btn-9" onclick="handleNumInput(9)">9</div>
+        <div class="num-btn clear" onclick="handleNumInput(0)">⌫</div>
     </div>
 
     <script>
         let solution = [];
         let selectedCell = null;
-        let puzzleState = []; 
         let readonlyMap = []; 
+        let isPickerMode = false;
+        let heldNumber = null;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // --- THEME & PERSISTENCE ---
         function toggleTheme() {
             const current = document.body.getAttribute('data-theme');
             const newTheme = current === 'dark' ? 'light' : 'dark';
@@ -195,43 +253,52 @@
             localStorage.setItem('sudoku_theme', newTheme);
         }
 
+        function togglePickerMode() {
+            isPickerMode = document.getElementById('pickerModeToggle').checked;
+            heldNumber = null;
+            clearHighlights();
+            updateNumpadUI();
+        }
+
+        function updateNumpadUI() {
+            document.querySelectorAll('.num-btn').forEach(btn => btn.classList.remove('active-num'));
+            if (isPickerMode && heldNumber) {
+                const activeBtn = document.getElementById(`btn-${heldNumber}`);
+                if (activeBtn) activeBtn.classList.add('active-num');
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match', 'picker-active'));
+        }
+
         function saveGame() {
             const currentDigits = Array.from(document.querySelectorAll('.cell')).map(c => c.innerText);
-            const data = {
-                solution,
-                puzzleState: currentDigits,
-                readonlyMap,
+            localStorage.setItem('sudoku_save_data', JSON.stringify({
+                solution, puzzleState: currentDigits, readonlyMap,
                 difficulty: document.querySelector('input[name="diff"]:checked').value
-            };
-            localStorage.setItem('sudoku_save_data', JSON.stringify(data));
+            }));
         }
 
         function loadGame() {
             const savedTheme = localStorage.getItem('sudoku_theme');
             if (savedTheme) document.body.setAttribute('data-theme', savedTheme);
-
             const savedData = localStorage.getItem('sudoku_save_data');
             if (savedData) {
                 const data = JSON.parse(savedData);
-                solution = data.solution;
-                readonlyMap = data.readonlyMap;
-                
-                // Set radio button
+                solution = data.solution; readonlyMap = data.readonlyMap;
                 document.querySelector(`input[name="diff"][value="${data.difficulty}"]`).checked = true;
-                
                 renderSaved(data.puzzleState);
                 return true;
             }
             return false;
         }
 
-        // --- CORE LOGIC ---
         function playSound(freq) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -242,20 +309,15 @@
             const diff = document.querySelector('input[name="diff"]:checked').value;
             const clues = diff === 'easy' ? 36 : diff === 'hard' ? 26 : 19;
             let board = Array.from({length: 9}, () => Array(9).fill(0));
-            solve(board);
-            solution = JSON.parse(JSON.stringify(board));
-            
+            solve(board); solution = JSON.parse(JSON.stringify(board));
             readonlyMap = Array(81).fill(false);
             let removed = 0;
             while(removed < (81 - clues)) {
                 let r = Math.floor(Math.random()*9), c = Math.floor(Math.random()*9);
                 if(board[r][c] !== 0) { board[r][c] = 0; removed++; }
             }
-
-            const flatBoard = board.flat();
-            flatBoard.forEach((val, i) => { if(val !== 0) readonlyMap[i] = true; });
-
-            renderSaved(flatBoard.map(v => v === 0 ? "" : v.toString()));
+            board.flat().forEach((val, i) => { if(val !== 0) readonlyMap[i] = true; });
+            renderSaved(board.flat().map(v => v === 0 ? "" : v.toString()));
             saveGame();
         }
 
@@ -291,27 +353,37 @@
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
             flatDigits.forEach((val, i) => {
-                const r = Math.floor(i / 9);
-                const c = i % 9;
                 const div = document.createElement('div');
                 div.className = 'cell';
-                div.dataset.r = r; div.dataset.c = c;
+                div.dataset.r = Math.floor(i / 9); div.dataset.c = i % 9;
                 div.innerText = val;
-
-                if (readonlyMap[i]) {
-                    div.classList.add('readonly');
-                } else if (val !== "") {
-                    const isCorrect = (val == solution[r][c]);
-                    div.classList.add(isCorrect ? 'user-correct' : 'user-error');
-                }
-
-                div.onclick = () => selectCell(div);
+                if (readonlyMap[i]) div.classList.add('readonly');
+                else if (val !== "") div.classList.add(val == solution[div.dataset.r][div.dataset.c] ? 'user-correct' : 'user-error');
+                div.onclick = () => onCellClick(div);
                 grid.appendChild(div);
             });
         }
 
-        function selectCell(cell) {
-            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match'));
+        function onCellClick(cell) {
+            if (isPickerMode) {
+                if (cell.classList.contains('readonly')) {
+                    // Pick the number from a fixed cell
+                    heldNumber = parseInt(cell.innerText);
+                    updateNumpadUI();
+                    highlight(cell);
+                } else if (heldNumber !== null) {
+                    // Fill an empty/user cell with the held number
+                    inputNumberIntoCell(cell, heldNumber);
+                } else {
+                    highlight(cell);
+                }
+            } else {
+                highlight(cell);
+            }
+        }
+
+        function highlight(cell) {
+            clearHighlights();
             selectedCell = cell;
             cell.classList.add('selected');
             const r = cell.dataset.r, c = cell.dataset.c, val = cell.innerText;
@@ -321,29 +393,34 @@
             });
         }
 
-        function inputNumber(n) {
-            if (!selectedCell || selectedCell.classList.contains('readonly')) return;
-            const r = parseInt(selectedCell.dataset.r), c = parseInt(selectedCell.dataset.c);
-            
+        function handleNumInput(n) {
+            if (isPickerMode) {
+                heldNumber = n === 0 ? null : n;
+                updateNumpadUI();
+            } else if (selectedCell) {
+                inputNumberIntoCell(selectedCell, n);
+            }
+        }
+
+        function inputNumberIntoCell(cell, n) {
+            if (cell.classList.contains('readonly')) return;
+            const r = cell.dataset.r, c = cell.dataset.c;
             if (n === 0) {
-                selectedCell.innerText = '';
-                selectedCell.classList.remove('user-correct', 'user-error');
+                cell.innerText = '';
+                cell.classList.remove('user-correct', 'user-error');
                 playSound(200);
             } else {
-                selectedCell.innerText = n;
+                cell.innerText = n;
                 const correct = (n == solution[r][c]);
-                selectedCell.classList.remove('user-correct', 'user-error');
-                selectedCell.classList.add(correct ? 'user-correct' : 'user-error');
+                cell.classList.remove('user-correct', 'user-error');
+                cell.classList.add(correct ? 'user-correct' : 'user-error');
                 playSound(correct ? 600 : 150);
             }
-            selectCell(selectedCell);
+            highlight(cell);
             saveGame();
         }
 
-        // --- STARTUP ---
-        if (!loadGame()) {
-            newGame();
-        }
+        if (!loadGame()) newGame();
     </script>
 </body>
 </html>
