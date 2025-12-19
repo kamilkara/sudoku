@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - Optimized Layout</title>
+    <title>Pro Sudoku</title>
     <style>
         :root {
             --bg-body: #f8f9fa; --bg-card: #ffffff; --text-main: #212529;
@@ -23,7 +23,7 @@
             margin: 0; padding: 10px; transition: background 0.3s ease; user-select: none;
             min-height: 100vh;
         }
-        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .header-btns { display: flex; gap: 8px; }
         
         .ui-btn { 
@@ -32,8 +32,8 @@
         }
         .ui-btn.active-picker { background-color: var(--val-user); color: white; border-color: var(--val-user); }
 
-        /* Timer placed between table and numbers */
-        .timer-row { margin: 15px 0; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
+        /* Timer moved to top of table */
+        .timer-row { margin-bottom: 10px; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
 
         #grid { 
             display: grid; grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); 
@@ -53,7 +53,7 @@
         .user-correct { color: var(--val-user); }
         .user-error { color: var(--val-error); }
 
-        .numpad { display: flex; justify-content: center; gap: 4px; width: 100%; max-width: 500px; margin-bottom: auto; }
+        .numpad { display: flex; justify-content: center; gap: 4px; width: 100%; max-width: 500px; margin-top: 25px; }
         .num-btn { 
             flex: 1; aspect-ratio: 1/1.2; background: var(--bg-card); color: var(--text-main); 
             border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
@@ -61,13 +61,17 @@
         }
         .badge { position: absolute; top: 2px; right: 4px; font-size: 9px; color: var(--text-main); font-weight: 300; opacity: 0.7; }
         .num-btn.active-num { background-color: var(--val-user); color: white; border-color: var(--val-user); }
-        .num-btn.active-num .badge { color: white; opacity: 1; }
         .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
         .num-btn.clear { flex: 1.2; color: var(--val-error); }
 
-        /* Pale pause button at the bottom */
-        .footer-pause { margin-top: 30px; margin-bottom: 20px; opacity: 0.4; transition: opacity 0.2s; }
-        .footer-pause:hover { opacity: 0.8; }
+        /* Auto-Finish Button Styles */
+        #autoFinishContainer { margin-top: 15px; display: none; }
+        .finish-btn { background-color: #ffc107; color: #000; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+        /* Pause Button at Bottom (matches screenshot location) */
+        .footer-pause { margin-top: auto; padding: 20px; cursor: pointer; opacity: 0.6; transition: transform 0.2s; }
+        .footer-pause:active { transform: scale(0.9); }
+        .footer-pause svg { width: 50px; height: 50px; fill: var(--text-main); }
 
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
         .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 320px; }
@@ -86,9 +90,13 @@
         </div>
     </div>
 
+    <div class="timer-row" id="timer">00:00</div>
+
     <div id="grid"></div>
 
-    <div class="timer-row" id="timer">00:00</div>
+    <div id="autoFinishContainer">
+        <button class="finish-btn" onclick="autoFinishBoard()">🪄 Finish Board (8 left)</button>
+    </div>
 
     <div class="numpad" id="numpad">
         <div class="num-btn" id="btn-1" onclick="handleNumInput(1)">1<span class="badge" id="count-1"></span></div>
@@ -103,11 +111,13 @@
         <div class="num-btn clear" onclick="handleNumInput(0)">⌫</div>
     </div>
 
-    <button class="ui-btn footer-pause" onclick="pauseGame()">⏸ Pause Game</button>
+    <div class="footer-pause" onclick="pauseGame()">
+        <svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </div>
 
     <div id="gameModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Select Difficulty</h2>
+            <h2 id="modalTitle">Paused</h2>
             <div class="difficulty-options">
                 <button class="diff-btn" id="resumeBtn" onclick="resumeGame()" style="background:#28a745">Resume</button>
                 <hr style="width:100%; border:0; border-top:1px solid var(--cell-border); margin:10px 0;">
@@ -234,10 +244,15 @@
         function updateNumpadUI() {
             const counts = {}; for (let i = 1; i <= 9; i++) counts[i] = 0;
             let correctCount = 0;
+            let emptyCount = 0;
+
             document.querySelectorAll('.cell').forEach(cell => {
                 const val = parseInt(cell.innerText), r = cell.dataset.r, c = cell.dataset.c;
                 if (val && val == solution[r][c]) { counts[val]++; correctCount++; }
+                if (!val) emptyCount++;
             });
+
+            // Update badges
             for (let i = 1; i <= 9; i++) {
                 const btn = document.getElementById(`btn-${i}`);
                 const badge = document.getElementById(`count-${i}`);
@@ -247,7 +262,35 @@
                 if (remaining === 0) { btn.classList.add('completed'); if (heldNumber === i) heldNumber = null; }
                 else if (isPickerMode && heldNumber === i) btn.classList.add('active-num');
             }
-            if (correctCount === 81) { isPaused = true; document.getElementById('modalTitle').innerText = "Winner! Time: " + document.getElementById('timer').innerText; document.getElementById('resumeBtn').style.display = 'none'; document.getElementById('gameModal').style.display = 'flex'; }
+
+            // Show Auto-Finish if only 8 moves remain
+            const finishContainer = document.getElementById('autoFinishContainer');
+            if (emptyCount === 8) {
+                finishContainer.style.display = 'block';
+            } else {
+                finishContainer.style.display = 'none';
+            }
+
+            if (correctCount === 81) { 
+                isPaused = true; 
+                document.getElementById('modalTitle').innerText = "Winner! Time: " + document.getElementById('timer').innerText; 
+                document.getElementById('resumeBtn').style.display = 'none'; 
+                document.getElementById('gameModal').style.display = 'flex'; 
+            }
+        }
+
+        function autoFinishBoard() {
+            document.querySelectorAll('.cell').forEach(cell => {
+                const r = cell.dataset.r, c = cell.dataset.c;
+                if (!cell.innerText || cell.classList.contains('user-error')) {
+                    cell.innerText = solution[r][c];
+                    cell.classList.remove('user-error');
+                    cell.classList.add('user-correct');
+                }
+            });
+            playSound(800, 0.3);
+            updateNumpadUI();
+            saveGame();
         }
 
         function onCellClick(cell) {
