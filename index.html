@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - Smart Picker</title>
+    <title>Pro Sudoku</title>
     <style>
         :root {
             --bg-body: #f8f9fa;
@@ -15,11 +15,9 @@
             --hl-lane: #e8f0fe; 
             --hl-match: #c2dbff;
             --hl-selected: #7fb5ff;
-            --hl-picker: #ffecb3;
             --val-fixed: #000000;
             --val-user: #0056b3;
             --val-error: #e63946;
-            --disabled: #e9ecef;
         }
 
         [data-theme='dark'] {
@@ -31,27 +29,26 @@
             --hl-lane: #2c3e50;
             --hl-match: #34495e;
             --hl-selected: #1a5fb4;
-            --hl-picker: #5d4037;
             --val-fixed: #ffffff;
             --val-user: #4dabf7;
             --val-error: #ff6b6b;
-            --disabled: #2c2c2c;
         }
 
         body {
             font-family: 'Segoe UI', Roboto, sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0; padding: 10px;
-            transition: background 0.3s ease;
-            user-select: none;
+            display: flex; flex-direction: column; align-items: center;
+            margin: 0; padding: 10px; transition: background 0.3s ease; user-select: none;
         }
 
         .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .theme-btn { background: none; border: 1px solid var(--cell-border); color: var(--text-main); padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; }
+        .header-btns { display: flex; gap: 8px; }
+        
+        .ui-btn { 
+            background: none; border: 1px solid var(--cell-border); color: var(--text-main); 
+            padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; 
+        }
 
         .picker-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px; background: var(--bg-card); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--cell-border); }
         .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
@@ -61,12 +58,16 @@
         input:checked + .slider { background-color: var(--val-user); }
         input:checked + .slider:before { transform: translateX(14px); }
 
-        .controls { display: flex; gap: 10px; margin-bottom: 15px; }
-        .controls label { cursor: pointer; font-size: 14px; padding: 6px 12px; border-radius: 15px; background: var(--bg-card); border: 1px solid var(--cell-border); }
-        .controls input:checked + span { color: var(--val-user); font-weight: bold; }
-
-        #grid { display: grid; grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); grid-template-rows: repeat(9, clamp(35px, 10vw, 50px)); border: var(--thick-weight) solid var(--grid-border); background-color: var(--grid-border); gap: 1px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .cell { background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 400; cursor: pointer; }
+        #grid { 
+            display: grid; 
+            grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); 
+            grid-template-rows: repeat(9, clamp(35px, 10vw, 50px)); 
+            border: var(--thick-weight) solid var(--grid-border); 
+            background-color: var(--grid-border); 
+            gap: 1px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+        }
+        .cell { background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; font-weight: 400; }
         .cell:nth-child(3n) { border-right: var(--thick-weight) solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
         #grid > div:nth-child(n+19):nth-child(-n+27), #grid > div:nth-child(n+46):nth-child(-n+54) { border-bottom: var(--thick-weight) solid var(--grid-border); }
@@ -75,28 +76,45 @@
         .hl-match { background-color: var(--hl-match) !important; }
         .selected { background-color: var(--hl-selected) !important; }
 
-        .readonly { color: var(--val-fixed); font-weight: 700; }
+        .readonly { color: var(--val-fixed); }
         .user-correct { color: var(--val-user); }
         .user-error { color: var(--val-error); }
 
-        .numpad { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 25px; width: 100%; max-width: 450px; }
-        .num-btn { background: var(--bg-card); color: var(--text-main); padding: 15px 0; border-radius: 8px; font-size: 1.2rem; font-weight: 600; border: 1px solid var(--cell-border); text-align: center; cursor: pointer; transition: all 0.2s; }
+        .numpad { display: flex; justify-content: center; gap: 4px; margin-top: 25px; width: 100%; max-width: 500px; }
+        .num-btn { 
+            flex: 1; aspect-ratio: 1/1.2; background: var(--bg-card); color: var(--text-main); 
+            border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
+            display: flex; align-items: center; justify-content: center; cursor: pointer; 
+            transition: all 0.2s; position: relative;
+        }
+        
+        /* Updated: Thinner badge, no background */
+        .badge {
+            position: absolute; top: 2px; right: 4px; font-size: 9px; 
+            color: var(--text-main); font-weight: 300; opacity: 0.7;
+        }
+        
         .num-btn.active-num { background-color: var(--val-user); color: white; border-color: var(--val-user); }
-        .num-btn.completed { background-color: var(--disabled); color: #999; border-color: var(--cell-border); cursor: not-allowed; opacity: 0.5; pointer-events: none; }
-        .num-btn:active:not(.completed) { transform: scale(0.95); }
+        .num-btn.active-num .badge { color: white; opacity: 1; }
+        
+        .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
+        .num-btn.clear { flex: 1.2; color: var(--val-error); }
+
+        /* Modal */
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 300px; }
+        .difficulty-options { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .diff-btn { padding: 12px; border: none; border-radius: 10px; background: var(--val-user); color: white; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body data-theme="light">
 
     <div class="header">
         <h2 style="margin:0">Sudoku</h2>
-        <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
-    </div>
-
-    <div class="controls">
-        <label><input type="radio" name="diff" value="easy" checked onchange="newGame()"> <span>Normal</span></label>
-        <label><input type="radio" name="diff" value="hard" onchange="newGame()"> <span>Hard</span></label>
-        <label><input type="radio" name="diff" value="expert" onchange="newGame()"> <span>Expert</span></label>
+        <div class="header-btns">
+            <button class="ui-btn" onclick="showNewGameModal()">➕ New</button>
+            <button class="ui-btn" onclick="toggleTheme()">🌓 Theme</button>
+        </div>
     </div>
 
     <div class="picker-toggle">
@@ -110,24 +128,33 @@
     <div id="grid"></div>
 
     <div class="numpad" id="numpad">
-        <div class="num-btn" id="btn-1" onclick="handleNumInput(1)">1</div>
-        <div class="num-btn" id="btn-2" onclick="handleNumInput(2)">2</div>
-        <div class="num-btn" id="btn-3" onclick="handleNumInput(3)">3</div>
-        <div class="num-btn" id="btn-4" onclick="handleNumInput(4)">4</div>
-        <div class="num-btn" id="btn-5" onclick="handleNumInput(5)">5</div>
-        <div class="num-btn" id="btn-6" onclick="handleNumInput(6)">6</div>
-        <div class="num-btn" id="btn-7" onclick="handleNumInput(7)">7</div>
-        <div class="num-btn" id="btn-8" onclick="handleNumInput(8)">8</div>
-        <div class="num-btn" id="btn-9" onclick="handleNumInput(9)">9</div>
+        <div class="num-btn" id="btn-1" onclick="handleNumInput(1)">1<span class="badge" id="count-1"></span></div>
+        <div class="num-btn" id="btn-2" onclick="handleNumInput(2)">2<span class="badge" id="count-2"></span></div>
+        <div class="num-btn" id="btn-3" onclick="handleNumInput(3)">3<span class="badge" id="count-3"></span></div>
+        <div class="num-btn" id="btn-4" onclick="handleNumInput(4)">4<span class="badge" id="count-4"></span></div>
+        <div class="num-btn" id="btn-5" onclick="handleNumInput(5)">5<span class="badge" id="count-5"></span></div>
+        <div class="num-btn" id="btn-6" onclick="handleNumInput(6)">6<span class="badge" id="count-6"></span></div>
+        <div class="num-btn" id="btn-7" onclick="handleNumInput(7)">7<span class="badge" id="count-7"></span></div>
+        <div class="num-btn" id="btn-8" onclick="handleNumInput(8)">8<span class="badge" id="count-8"></span></div>
+        <div class="num-btn" id="btn-9" onclick="handleNumInput(9)">9<span class="badge" id="count-9"></span></div>
         <div class="num-btn clear" onclick="handleNumInput(0)">⌫</div>
     </div>
 
+    <div id="gameModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Select Difficulty</h2>
+            <div class="difficulty-options">
+                <button class="diff-btn" onclick="newGame('easy')">Easy</button>
+                <button class="diff-btn" onclick="newGame('normal')">Normal</button>
+                <button class="diff-btn" onclick="newGame('hard')">Hard</button>
+                <button class="diff-btn" onclick="newGame('expert')">Expert</button>
+            </div>
+            <button class="ui-btn" style="margin-top:15px; border:none" onclick="hideModal()">Cancel</button>
+        </div>
+    </div>
+
     <script>
-        let solution = [];
-        let selectedCell = null;
-        let readonlyMap = []; 
-        let isPickerMode = false;
-        let heldNumber = null;
+        let solution = [], selectedCell = null, readonlyMap = [], isPickerMode = false, heldNumber = null;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         function toggleTheme() {
@@ -137,23 +164,23 @@
             localStorage.setItem('sudoku_theme', newTheme);
         }
 
-        function togglePickerMode() {
-            isPickerMode = document.getElementById('pickerModeToggle').checked;
-            heldNumber = null;
-            clearHighlights();
-            updateNumpadUI();
+        function showNewGameModal() {
+            document.getElementById('modalTitle').innerText = "New Game";
+            document.getElementById('gameModal').style.display = 'flex';
         }
 
-        function clearHighlights() {
-            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match'));
+        function hideModal() { document.getElementById('gameModal').style.display = 'none'; }
+
+        function togglePickerMode() {
+            isPickerMode = document.getElementById('pickerModeToggle').checked;
+            heldNumber = null; clearHighlights(); updateNumpadUI();
         }
+
+        function clearHighlights() { document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match')); }
 
         function saveGame() {
             const currentDigits = Array.from(document.querySelectorAll('.cell')).map(c => c.innerText);
-            localStorage.setItem('sudoku_save_data', JSON.stringify({
-                solution, puzzleState: currentDigits, readonlyMap,
-                difficulty: document.querySelector('input[name="diff"]:checked').value
-            }));
+            localStorage.setItem('sudoku_save_data', JSON.stringify({ solution, puzzleState: currentDigits, readonlyMap }));
         }
 
         function loadGame() {
@@ -163,27 +190,29 @@
             if (savedData) {
                 const data = JSON.parse(savedData);
                 solution = data.solution; readonlyMap = data.readonlyMap;
-                document.querySelector(`input[name="diff"][value="${data.difficulty}"]`).checked = true;
-                renderSaved(data.puzzleState);
-                return true;
+                renderSaved(data.puzzleState); return true;
             }
             return false;
         }
 
-        function playSound(freq) {
+        function playSound(freq, duration = 0.1) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
             osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
-        function newGame() {
-            const diff = document.querySelector('input[name="diff"]:checked').value;
-            const clues = diff === 'easy' ? 36 : diff === 'hard' ? 26 : 19;
+        function playVictorySound() {
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((note, i) => { setTimeout(() => playSound(note, 0.4), i * 150); });
+        }
+
+        function newGame(diff) {
+            hideModal();
+            const clues = diff === 'easy' ? 44 : diff === 'normal' ? 36 : diff === 'hard' ? 26 : 19;
             let board = Array.from({length: 9}, () => Array(9).fill(0));
             solve(board); solution = JSON.parse(JSON.stringify(board));
             readonlyMap = Array(81).fill(false);
@@ -204,9 +233,7 @@
                         let nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
                         for (let n of nums) {
                             if (check(board, r, c, n)) {
-                                board[r][c] = n;
-                                if (solve(board)) return true;
-                                board[r][c] = 0;
+                                board[r][c] = n; if (solve(board)) return true; board[r][c] = 0;
                             }
                         }
                         return false;
@@ -218,50 +245,49 @@
 
         function check(b, r, c, k) {
             for (let i = 0; i < 9; i++) {
-                const m = 3 * Math.floor(r / 3) + Math.floor(i / 3);
-                const n = 3 * Math.floor(c / 3) + i % 3;
+                const m = 3 * Math.floor(r / 3) + Math.floor(i / 3), n = 3 * Math.floor(c / 3) + i % 3;
                 if (b[r][i] == k || b[i][c] == k || b[m][n] == k) return false;
             }
             return true;
         }
 
         function renderSaved(flatDigits) {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
+            const grid = document.getElementById('grid'); grid.innerHTML = '';
             flatDigits.forEach((val, i) => {
-                const div = document.createElement('div');
-                div.className = 'cell';
+                const div = document.createElement('div'); div.className = 'cell';
                 div.dataset.r = Math.floor(i / 9); div.dataset.c = i % 9;
                 div.innerText = val;
                 if (readonlyMap[i]) div.classList.add('readonly');
                 else if (val !== "") div.classList.add(val == solution[div.dataset.r][div.dataset.c] ? 'user-correct' : 'user-error');
-                div.onclick = () => onCellClick(div);
-                grid.appendChild(div);
+                div.onclick = () => onCellClick(div); grid.appendChild(div);
             });
             updateNumpadUI();
         }
 
         function updateNumpadUI() {
-            const counts = {};
-            for (let i = 1; i <= 9; i++) counts[i] = 0;
-
+            const counts = {}; for (let i = 1; i <= 9; i++) counts[i] = 0;
+            let correctCount = 0;
             document.querySelectorAll('.cell').forEach(cell => {
-                const val = parseInt(cell.innerText);
-                const r = cell.dataset.r, c = cell.dataset.c;
-                if (val && val == solution[r][c]) {
-                    counts[val]++;
-                }
+                const val = parseInt(cell.innerText), r = cell.dataset.r, c = cell.dataset.c;
+                if (val && val == solution[r][c]) { counts[val]++; correctCount++; }
             });
-
             for (let i = 1; i <= 9; i++) {
                 const btn = document.getElementById(`btn-${i}`);
+                const badge = document.getElementById(`count-${i}`);
+                const remaining = 9 - counts[i];
+                badge.innerText = remaining > 0 ? remaining : "";
+                
                 btn.classList.remove('active-num', 'completed');
-                if (counts[i] === 9) {
-                    btn.classList.add('completed');
-                    if (heldNumber === i) heldNumber = null;
-                } else if (isPickerMode && heldNumber === i) {
-                    btn.classList.add('active-num');
+                if (remaining === 0) { 
+                    btn.classList.add('completed'); 
+                    if (heldNumber === i) heldNumber = null; 
                 }
+                else if (isPickerMode && heldNumber === i) btn.classList.add('active-num');
+            }
+            if (correctCount === 81) { 
+                playVictorySound(); 
+                document.getElementById('modalTitle').innerText = "Board Complete!";
+                document.getElementById('gameModal').style.display = 'flex'; 
             }
         }
 
@@ -270,21 +296,14 @@
                 if (cell.classList.contains('readonly') || (cell.innerText !== "" && cell.classList.contains('user-correct'))) {
                     const clickedVal = parseInt(cell.innerText);
                     const btn = document.getElementById(`btn-${clickedVal}`);
-                    if (btn && !btn.classList.contains('completed')) {
-                        heldNumber = clickedVal;
-                    }
-                } else if (heldNumber !== null) {
-                    inputNumberIntoCell(cell, heldNumber);
-                }
+                    if (btn && !btn.classList.contains('completed')) heldNumber = clickedVal;
+                } else if (heldNumber !== null) inputNumberIntoCell(cell, heldNumber);
             }
-            highlight(cell);
-            updateNumpadUI();
+            highlight(cell); updateNumpadUI();
         }
 
         function highlight(cell) {
-            clearHighlights();
-            selectedCell = cell;
-            cell.classList.add('selected');
+            clearHighlights(); selectedCell = cell; cell.classList.add('selected');
             const r = cell.dataset.r, c = cell.dataset.c, val = cell.innerText;
             document.querySelectorAll('.cell').forEach(item => {
                 if (item.dataset.r === r || item.dataset.c === c) item.classList.add('hl-lane');
@@ -295,33 +314,24 @@
         function handleNumInput(n) {
             if (isPickerMode && n !== 0) {
                 const btn = document.getElementById(`btn-${n}`);
-                if (!btn.classList.contains('completed')) {
-                    heldNumber = n;
-                }
-            } else if (selectedCell) {
-                inputNumberIntoCell(selectedCell, n);
-            }
-            updateNumpadUI();
-            if (selectedCell) highlight(selectedCell);
+                if (!btn.classList.contains('completed')) heldNumber = n;
+            } else if (selectedCell) inputNumberIntoCell(selectedCell, n);
+            updateNumpadUI(); if (selectedCell) highlight(selectedCell);
         }
 
         function inputNumberIntoCell(cell, n) {
             if (cell.classList.contains('readonly')) return;
             const r = cell.dataset.r, c = cell.dataset.c;
-            if (n === 0) {
-                cell.innerText = '';
-                cell.className = 'cell selected';
-                playSound(200);
-            } else {
-                const isCorrect = (n == solution[r][c]);
-                cell.innerText = n;
+            if (n === 0) { cell.innerText = ''; cell.className = 'cell selected'; playSound(200); }
+            else {
+                const isCorrect = (n == solution[r][c]); cell.innerText = n;
                 cell.className = `cell selected ${isCorrect ? 'user-correct' : 'user-error'}`;
                 playSound(isCorrect ? 600 : 150);
             }
             saveGame();
         }
 
-        if (!loadGame()) newGame();
+        if (!loadGame()) newGame('normal');
     </script>
 </body>
 </html>
