@@ -42,21 +42,22 @@
             margin: 0; padding: 10px; transition: background 0.3s ease; user-select: none;
         }
 
-        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header-btns { display: flex; gap: 8px; }
         
+        /* Unified Button Style */
         .ui-btn { 
-            background: none; border: 1px solid var(--cell-border); color: var(--text-main); 
-            padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; 
+            background: var(--bg-card); border: 1px solid var(--cell-border); color: var(--text-main); 
+            padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; 
+            transition: all 0.2s; font-weight: 500;
         }
 
-        .picker-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 15px; background: var(--bg-card); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--cell-border); }
-        .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--val-user); }
-        input:checked + .slider:before { transform: translateX(14px); }
+        /* Active State for Picker Button */
+        .ui-btn.active-picker {
+            background-color: var(--val-user);
+            color: white;
+            border-color: var(--val-user);
+        }
 
         #grid { 
             display: grid; 
@@ -88,7 +89,6 @@
             transition: all 0.2s; position: relative;
         }
         
-        /* Updated: Thinner badge, no background */
         .badge {
             position: absolute; top: 2px; right: 4px; font-size: 9px; 
             color: var(--text-main); font-weight: 300; opacity: 0.7;
@@ -100,7 +100,6 @@
         .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
         .num-btn.clear { flex: 1.2; color: var(--val-error); }
 
-        /* Modal */
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
         .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 300px; }
         .difficulty-options { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
@@ -112,17 +111,10 @@
     <div class="header">
         <h2 style="margin:0">Sudoku</h2>
         <div class="header-btns">
+            <button id="pickerBtn" class="ui-btn" onclick="togglePickerMode()">🖊️ Picker</button>
             <button class="ui-btn" onclick="showNewGameModal()">➕ New</button>
             <button class="ui-btn" onclick="toggleTheme()">🌓 Theme</button>
         </div>
-    </div>
-
-    <div class="picker-toggle">
-        <span>Picker Mode</span>
-        <label class="switch">
-            <input type="checkbox" id="pickerModeToggle" onchange="togglePickerMode()">
-            <span class="slider"></span>
-        </label>
     </div>
 
     <div id="grid"></div>
@@ -172,7 +164,13 @@
         function hideModal() { document.getElementById('gameModal').style.display = 'none'; }
 
         function togglePickerMode() {
-            isPickerMode = document.getElementById('pickerModeToggle').checked;
+            isPickerMode = !isPickerMode;
+            const btn = document.getElementById('pickerBtn');
+            if(isPickerMode) {
+                btn.classList.add('active-picker');
+            } else {
+                btn.classList.remove('active-picker');
+            }
             heldNumber = null; clearHighlights(); updateNumpadUI();
         }
 
