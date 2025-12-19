@@ -6,113 +6,70 @@
     <title>Pro Sudoku</title>
     <style>
         :root {
-            --bg-body: #f8f9fa;
-            --bg-card: #ffffff;
-            --text-main: #212529;
-            --grid-border: #343a40;
-            --cell-border: #dee2e6;
-            --thick-weight: 2px; 
-            --hl-lane: #e8f0fe; 
-            --hl-match: #c2dbff;
-            --hl-selected: #7fb5ff;
-            --val-fixed: #000000;
-            --val-user: #0056b3;
-            --val-error: #e63946;
+            --bg-body: #f8f9fa; --bg-card: #ffffff; --text-main: #212529;
+            --grid-border: #343a40; --cell-border: #dee2e6; --thick-weight: 2px; 
+            --hl-lane: #e8f0fe; --hl-match: #c2dbff; --hl-selected: #7fb5ff;
+            --val-fixed: #000000; --val-user: #0056b3; --val-error: #e63946;
         }
-
         [data-theme='dark'] {
-            --bg-body: #121212;
-            --bg-card: #1e1e1e;
-            --text-main: #e0e0e0;
-            --grid-border: #ffffff;
-            --cell-border: #333333;
-            --hl-lane: #2c3e50;
-            --hl-match: #34495e;
-            --hl-selected: #1a5fb4;
-            --val-fixed: #ffffff;
-            --val-user: #4dabf7;
-            --val-error: #ff6b6b;
+            --bg-body: #121212; --bg-card: #1e1e1e; --text-main: #e0e0e0;
+            --grid-border: #ffffff; --cell-border: #333333; --hl-lane: #2c3e50;
+            --hl-match: #34495e; --hl-selected: #1a5fb4; --val-fixed: #ffffff;
+            --val-user: #4dabf7; --val-error: #ff6b6b;
         }
-
         body {
-            font-family: 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            display: flex; flex-direction: column; align-items: center;
+            font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-body);
+            color: var(--text-main); display: flex; flex-direction: column; align-items: center;
             margin: 0; padding: 10px; transition: background 0.3s ease; user-select: none;
         }
-
-        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header-btns { display: flex; gap: 8px; }
-        
-        /* Unified Button Style */
+        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .header-btns { display: flex; gap: 8px; align-items: center; }
+        .timer-display { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.1rem; min-width: 60px; }
         .ui-btn { 
             background: var(--bg-card); border: 1px solid var(--cell-border); color: var(--text-main); 
-            padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; 
-            transition: all 0.2s; font-weight: 500;
+            padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 500;
         }
-
-        /* Active State for Picker Button */
-        .ui-btn.active-picker {
-            background-color: var(--val-user);
-            color: white;
-            border-color: var(--val-user);
-        }
-
+        .ui-btn.active-picker { background-color: var(--val-user); color: white; border-color: var(--val-user); }
         #grid { 
-            display: grid; 
-            grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); 
-            grid-template-rows: repeat(9, clamp(35px, 10vw, 50px)); 
-            border: var(--thick-weight) solid var(--grid-border); 
-            background-color: var(--grid-border); 
-            gap: 1px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            display: grid; grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); 
+            grid-template-rows: repeat(9, clamp(35px, 10vw, 50px)); border: var(--thick-weight) solid var(--grid-border); 
+            background-color: var(--grid-border); gap: 1px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
         }
         .cell { background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; font-weight: 400; }
         .cell:nth-child(3n) { border-right: var(--thick-weight) solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
         #grid > div:nth-child(n+19):nth-child(-n+27), #grid > div:nth-child(n+46):nth-child(-n+54) { border-bottom: var(--thick-weight) solid var(--grid-border); }
-
         .hl-lane { background-color: var(--hl-lane); }
         .hl-match { background-color: var(--hl-match) !important; }
         .selected { background-color: var(--hl-selected) !important; }
-
         .readonly { color: var(--val-fixed); }
         .user-correct { color: var(--val-user); }
         .user-error { color: var(--val-error); }
-
         .numpad { display: flex; justify-content: center; gap: 4px; margin-top: 25px; width: 100%; max-width: 500px; }
         .num-btn { 
             flex: 1; aspect-ratio: 1/1.2; background: var(--bg-card); color: var(--text-main); 
             border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
-            display: flex; align-items: center; justify-content: center; cursor: pointer; 
-            transition: all 0.2s; position: relative;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
         }
-        
-        .badge {
-            position: absolute; top: 2px; right: 4px; font-size: 9px; 
-            color: var(--text-main); font-weight: 300; opacity: 0.7;
-        }
-        
+        .badge { position: absolute; top: 2px; right: 4px; font-size: 9px; color: var(--text-main); font-weight: 300; opacity: 0.7; }
         .num-btn.active-num { background-color: var(--val-user); color: white; border-color: var(--val-user); }
         .num-btn.active-num .badge { color: white; opacity: 1; }
-        
         .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
         .num-btn.clear { flex: 1.2; color: var(--val-error); }
-
-        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 300px; }
+        .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 320px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
         .difficulty-options { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .diff-btn { padding: 12px; border: none; border-radius: 10px; background: var(--val-user); color: white; font-weight: 600; cursor: pointer; }
+        .resume-btn { background: #28a745 !important; }
     </style>
 </head>
 <body data-theme="light">
 
     <div class="header">
-        <h2 style="margin:0">Sudoku</h2>
+        <div class="timer-display" id="timer">00:00</div>
         <div class="header-btns">
             <button id="pickerBtn" class="ui-btn" onclick="togglePickerMode()">🖊️ Picker</button>
-            <button class="ui-btn" onclick="showNewGameModal()">➕ New</button>
+            <button class="ui-btn" id="pauseBtn" onclick="pauseGame()">⏸ Pause</button>
             <button class="ui-btn" onclick="toggleTheme()">🌓 Theme</button>
         </div>
     </div>
@@ -134,20 +91,58 @@
 
     <div id="gameModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Select Difficulty</h2>
+            <h2 id="modalTitle">Paused</h2>
             <div class="difficulty-options">
+                <button class="diff-btn resume-btn" id="resumeBtn" onclick="resumeGame()">Resume</button>
+                <hr style="width:100%; border:0; border-top:1px solid var(--cell-border); margin:10px 0;">
+                <p style="margin:0; font-size:12px; opacity:0.7">Start New Game:</p>
                 <button class="diff-btn" onclick="newGame('easy')">Easy</button>
                 <button class="diff-btn" onclick="newGame('normal')">Normal</button>
                 <button class="diff-btn" onclick="newGame('hard')">Hard</button>
                 <button class="diff-btn" onclick="newGame('expert')">Expert</button>
             </div>
-            <button class="ui-btn" style="margin-top:15px; border:none" onclick="hideModal()">Cancel</button>
         </div>
     </div>
 
     <script>
         let solution = [], selectedCell = null, readonlyMap = [], isPickerMode = false, heldNumber = null;
+        let seconds = 0, timerInterval = null, isPaused = false;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // --- TIMER LOGIC ---
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    seconds++;
+                    updateTimerDisplay();
+                    if (seconds % 5 === 0) saveGame(); // Auto-save every 5 seconds
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const secs = (seconds % 60).toString().padStart(2, '0');
+            document.getElementById('timer').innerText = `${mins}:${secs}`;
+        }
+
+        function pauseGame() {
+            isPaused = true;
+            document.getElementById('modalTitle').innerText = "Game Paused";
+            document.getElementById('resumeBtn').style.display = "block";
+            document.getElementById('gameModal').style.display = 'flex';
+        }
+
+        function resumeGame() {
+            isPaused = false;
+            document.getElementById('gameModal').style.display = 'none';
+        }
+
+        // Auto-pause when tab is minimized
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && !isPaused) pauseGame();
+        });
 
         function toggleTheme() {
             const current = document.body.getAttribute('data-theme');
@@ -156,21 +151,9 @@
             localStorage.setItem('sudoku_theme', newTheme);
         }
 
-        function showNewGameModal() {
-            document.getElementById('modalTitle').innerText = "New Game";
-            document.getElementById('gameModal').style.display = 'flex';
-        }
-
-        function hideModal() { document.getElementById('gameModal').style.display = 'none'; }
-
         function togglePickerMode() {
             isPickerMode = !isPickerMode;
-            const btn = document.getElementById('pickerBtn');
-            if(isPickerMode) {
-                btn.classList.add('active-picker');
-            } else {
-                btn.classList.remove('active-picker');
-            }
+            document.getElementById('pickerBtn').classList.toggle('active-picker', isPickerMode);
             heldNumber = null; clearHighlights(); updateNumpadUI();
         }
 
@@ -178,7 +161,9 @@
 
         function saveGame() {
             const currentDigits = Array.from(document.querySelectorAll('.cell')).map(c => c.innerText);
-            localStorage.setItem('sudoku_save_data', JSON.stringify({ solution, puzzleState: currentDigits, readonlyMap }));
+            localStorage.setItem('sudoku_save_data', JSON.stringify({ 
+                solution, puzzleState: currentDigits, readonlyMap, seconds 
+            }));
         }
 
         function loadGame() {
@@ -188,7 +173,10 @@
             if (savedData) {
                 const data = JSON.parse(savedData);
                 solution = data.solution; readonlyMap = data.readonlyMap;
-                renderSaved(data.puzzleState); return true;
+                seconds = data.seconds || 0;
+                updateTimerDisplay();
+                renderSaved(data.puzzleState); 
+                return true;
             }
             return false;
         }
@@ -203,13 +191,11 @@
             osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
-        function playVictorySound() {
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            notes.forEach((note, i) => { setTimeout(() => playSound(note, 0.4), i * 150); });
-        }
-
         function newGame(diff) {
-            hideModal();
+            isPaused = false;
+            seconds = 0;
+            updateTimerDisplay();
+            document.getElementById('gameModal').style.display = 'none';
             const clues = diff === 'easy' ? 44 : diff === 'normal' ? 36 : diff === 'hard' ? 26 : 19;
             let board = Array.from({length: 9}, () => Array(9).fill(0));
             solve(board); solution = JSON.parse(JSON.stringify(board));
@@ -221,6 +207,7 @@
             }
             board.flat().forEach((val, i) => { if(val !== 0) readonlyMap[i] = true; });
             renderSaved(board.flat().map(v => v === 0 ? "" : v.toString()));
+            startTimer();
             saveGame();
         }
 
@@ -274,22 +261,21 @@
                 const badge = document.getElementById(`count-${i}`);
                 const remaining = 9 - counts[i];
                 badge.innerText = remaining > 0 ? remaining : "";
-                
                 btn.classList.remove('active-num', 'completed');
-                if (remaining === 0) { 
-                    btn.classList.add('completed'); 
-                    if (heldNumber === i) heldNumber = null; 
-                }
+                if (remaining === 0) { btn.classList.add('completed'); if (heldNumber === i) heldNumber = null; }
                 else if (isPickerMode && heldNumber === i) btn.classList.add('active-num');
             }
-            if (correctCount === 81) { 
-                playVictorySound(); 
-                document.getElementById('modalTitle').innerText = "Board Complete!";
-                document.getElementById('gameModal').style.display = 'flex'; 
+            if (correctCount === 81) {
+                isPaused = true;
+                const finalTime = document.getElementById('timer').innerText;
+                document.getElementById('modalTitle').innerText = "Winner! Time: " + finalTime;
+                document.getElementById('resumeBtn').style.display = "none";
+                document.getElementById('gameModal').style.display = 'flex';
             }
         }
 
         function onCellClick(cell) {
+            if (isPaused) return;
             if (isPickerMode) {
                 if (cell.classList.contains('readonly') || (cell.innerText !== "" && cell.classList.contains('user-correct'))) {
                     const clickedVal = parseInt(cell.innerText);
@@ -310,6 +296,7 @@
         }
 
         function handleNumInput(n) {
+            if (isPaused) return;
             if (isPickerMode && n !== 0) {
                 const btn = document.getElementById(`btn-${n}`);
                 if (!btn.classList.contains('completed')) heldNumber = n;
@@ -329,7 +316,12 @@
             saveGame();
         }
 
-        if (!loadGame()) newGame('normal');
+        // Start
+        if (!loadGame()) {
+            newGame('normal');
+        } else {
+            startTimer();
+        }
     </script>
 </body>
 </html>
