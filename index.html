@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku</title>
+    <title>Pro Sudoku - Optimized Layout</title>
     <style>
         :root {
             --bg-body: #f8f9fa; --bg-card: #ffffff; --text-main: #212529;
@@ -21,15 +21,20 @@
             font-family: 'Segoe UI', Roboto, sans-serif; background-color: var(--bg-body);
             color: var(--text-main); display: flex; flex-direction: column; align-items: center;
             margin: 0; padding: 10px; transition: background 0.3s ease; user-select: none;
+            min-height: 100vh;
         }
-        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .header-btns { display: flex; gap: 8px; align-items: center; }
-        .timer-display { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.1rem; min-width: 60px; }
+        .header { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header-btns { display: flex; gap: 8px; }
+        
         .ui-btn { 
             background: var(--bg-card); border: 1px solid var(--cell-border); color: var(--text-main); 
             padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 500;
         }
         .ui-btn.active-picker { background-color: var(--val-user); color: white; border-color: var(--val-user); }
+
+        /* Timer placed between table and numbers */
+        .timer-row { margin: 15px 0; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
+
         #grid { 
             display: grid; grid-template-columns: repeat(9, clamp(35px, 10vw, 50px)); 
             grid-template-rows: repeat(9, clamp(35px, 10vw, 50px)); border: var(--thick-weight) solid var(--grid-border); 
@@ -39,13 +44,16 @@
         .cell:nth-child(3n) { border-right: var(--thick-weight) solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
         #grid > div:nth-child(n+19):nth-child(-n+27), #grid > div:nth-child(n+46):nth-child(-n+54) { border-bottom: var(--thick-weight) solid var(--grid-border); }
+
         .hl-lane { background-color: var(--hl-lane); }
         .hl-match { background-color: var(--hl-match) !important; }
         .selected { background-color: var(--hl-selected) !important; }
+
         .readonly { color: var(--val-fixed); }
         .user-correct { color: var(--val-user); }
         .user-error { color: var(--val-error); }
-        .numpad { display: flex; justify-content: center; gap: 4px; margin-top: 25px; width: 100%; max-width: 500px; }
+
+        .numpad { display: flex; justify-content: center; gap: 4px; width: 100%; max-width: 500px; margin-bottom: auto; }
         .num-btn { 
             flex: 1; aspect-ratio: 1/1.2; background: var(--bg-card); color: var(--text-main); 
             border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
@@ -56,25 +64,31 @@
         .num-btn.active-num .badge { color: white; opacity: 1; }
         .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
         .num-btn.clear { flex: 1.2; color: var(--val-error); }
+
+        /* Pale pause button at the bottom */
+        .footer-pause { margin-top: 30px; margin-bottom: 20px; opacity: 0.4; transition: opacity 0.2s; }
+        .footer-pause:hover { opacity: 0.8; }
+
         .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(4px); }
-        .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 320px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .modal-content { background: var(--bg-card); padding: 30px; border-radius: 20px; text-align: center; max-width: 320px; }
         .difficulty-options { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
         .diff-btn { padding: 12px; border: none; border-radius: 10px; background: var(--val-user); color: white; font-weight: 600; cursor: pointer; }
-        .resume-btn { background: #28a745 !important; }
     </style>
 </head>
 <body data-theme="light">
 
     <div class="header">
-        <div class="timer-display" id="timer">00:00</div>
+        <h2 style="margin:0">Sudoku</h2>
         <div class="header-btns">
             <button id="pickerBtn" class="ui-btn" onclick="togglePickerMode()">🖊️ Picker</button>
-            <button class="ui-btn" id="pauseBtn" onclick="pauseGame()">⏸ Pause</button>
+            <button class="ui-btn" onclick="showNewGameModal()">➕ New</button>
             <button class="ui-btn" onclick="toggleTheme()">🌓 Theme</button>
         </div>
     </div>
 
     <div id="grid"></div>
+
+    <div class="timer-row" id="timer">00:00</div>
 
     <div class="numpad" id="numpad">
         <div class="num-btn" id="btn-1" onclick="handleNumInput(1)">1<span class="badge" id="count-1"></span></div>
@@ -89,18 +103,20 @@
         <div class="num-btn clear" onclick="handleNumInput(0)">⌫</div>
     </div>
 
+    <button class="ui-btn footer-pause" onclick="pauseGame()">⏸ Pause Game</button>
+
     <div id="gameModal" class="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Paused</h2>
+            <h2 id="modalTitle">Select Difficulty</h2>
             <div class="difficulty-options">
-                <button class="diff-btn resume-btn" id="resumeBtn" onclick="resumeGame()">Resume</button>
+                <button class="diff-btn" id="resumeBtn" onclick="resumeGame()" style="background:#28a745">Resume</button>
                 <hr style="width:100%; border:0; border-top:1px solid var(--cell-border); margin:10px 0;">
-                <p style="margin:0; font-size:12px; opacity:0.7">Start New Game:</p>
                 <button class="diff-btn" onclick="newGame('easy')">Easy</button>
                 <button class="diff-btn" onclick="newGame('normal')">Normal</button>
                 <button class="diff-btn" onclick="newGame('hard')">Hard</button>
                 <button class="diff-btn" onclick="newGame('expert')">Expert</button>
             </div>
+            <button class="ui-btn" style="margin-top:15px; border:none" onclick="hideModal()">Cancel</button>
         </div>
     </div>
 
@@ -109,15 +125,10 @@
         let seconds = 0, timerInterval = null, isPaused = false;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // --- TIMER LOGIC ---
         function startTimer() {
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                if (!isPaused) {
-                    seconds++;
-                    updateTimerDisplay();
-                    if (seconds % 5 === 0) saveGame(); // Auto-save every 5 seconds
-                }
+                if (!isPaused) { seconds++; updateTimerDisplay(); if (seconds % 5 === 0) saveGame(); }
             }, 1000);
         }
 
@@ -127,22 +138,10 @@
             document.getElementById('timer').innerText = `${mins}:${secs}`;
         }
 
-        function pauseGame() {
-            isPaused = true;
-            document.getElementById('modalTitle').innerText = "Game Paused";
-            document.getElementById('resumeBtn').style.display = "block";
-            document.getElementById('gameModal').style.display = 'flex';
-        }
-
-        function resumeGame() {
-            isPaused = false;
-            document.getElementById('gameModal').style.display = 'none';
-        }
-
-        // Auto-pause when tab is minimized
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden && !isPaused) pauseGame();
-        });
+        function pauseGame() { isPaused = true; document.getElementById('modalTitle').innerText = "Paused"; document.getElementById('resumeBtn').style.display = 'block'; document.getElementById('gameModal').style.display = 'flex'; }
+        function resumeGame() { isPaused = false; document.getElementById('gameModal').style.display = 'none'; }
+        function showNewGameModal() { document.getElementById('modalTitle').innerText = "New Game"; document.getElementById('resumeBtn').style.display = 'none'; document.getElementById('gameModal').style.display = 'flex'; }
+        function hideModal() { document.getElementById('gameModal').style.display = 'none'; }
 
         function toggleTheme() {
             const current = document.body.getAttribute('data-theme');
@@ -151,19 +150,13 @@
             localStorage.setItem('sudoku_theme', newTheme);
         }
 
-        function togglePickerMode() {
-            isPickerMode = !isPickerMode;
-            document.getElementById('pickerBtn').classList.toggle('active-picker', isPickerMode);
-            heldNumber = null; clearHighlights(); updateNumpadUI();
-        }
+        function togglePickerMode() { isPickerMode = !isPickerMode; document.getElementById('pickerBtn').classList.toggle('active-picker', isPickerMode); heldNumber = null; clearHighlights(); updateNumpadUI(); }
 
         function clearHighlights() { document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match')); }
 
         function saveGame() {
             const currentDigits = Array.from(document.querySelectorAll('.cell')).map(c => c.innerText);
-            localStorage.setItem('sudoku_save_data', JSON.stringify({ 
-                solution, puzzleState: currentDigits, readonlyMap, seconds 
-            }));
+            localStorage.setItem('sudoku_save_data', JSON.stringify({ solution, puzzleState: currentDigits, readonlyMap, seconds }));
         }
 
         function loadGame() {
@@ -172,11 +165,8 @@
             const savedData = localStorage.getItem('sudoku_save_data');
             if (savedData) {
                 const data = JSON.parse(savedData);
-                solution = data.solution; readonlyMap = data.readonlyMap;
-                seconds = data.seconds || 0;
-                updateTimerDisplay();
-                renderSaved(data.puzzleState); 
-                return true;
+                solution = data.solution; readonlyMap = data.readonlyMap; seconds = data.seconds || 0;
+                updateTimerDisplay(); renderSaved(data.puzzleState); return true;
             }
             return false;
         }
@@ -185,17 +175,12 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
             osc.type = 'sine'; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
         function newGame(diff) {
-            isPaused = false;
-            seconds = 0;
-            updateTimerDisplay();
-            document.getElementById('gameModal').style.display = 'none';
+            hideModal(); isPaused = false; seconds = 0; updateTimerDisplay();
             const clues = diff === 'easy' ? 44 : diff === 'normal' ? 36 : diff === 'hard' ? 26 : 19;
             let board = Array.from({length: 9}, () => Array(9).fill(0));
             solve(board); solution = JSON.parse(JSON.stringify(board));
@@ -207,8 +192,7 @@
             }
             board.flat().forEach((val, i) => { if(val !== 0) readonlyMap[i] = true; });
             renderSaved(board.flat().map(v => v === 0 ? "" : v.toString()));
-            startTimer();
-            saveGame();
+            startTimer(); saveGame();
         }
 
         function solve(board) {
@@ -217,9 +201,7 @@
                     if (board[r][c] === 0) {
                         let nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
                         for (let n of nums) {
-                            if (check(board, r, c, n)) {
-                                board[r][c] = n; if (solve(board)) return true; board[r][c] = 0;
-                            }
+                            if (check(board, r, c, n)) { board[r][c] = n; if (solve(board)) return true; board[r][c] = 0; }
                         }
                         return false;
                     }
@@ -265,13 +247,7 @@
                 if (remaining === 0) { btn.classList.add('completed'); if (heldNumber === i) heldNumber = null; }
                 else if (isPickerMode && heldNumber === i) btn.classList.add('active-num');
             }
-            if (correctCount === 81) {
-                isPaused = true;
-                const finalTime = document.getElementById('timer').innerText;
-                document.getElementById('modalTitle').innerText = "Winner! Time: " + finalTime;
-                document.getElementById('resumeBtn').style.display = "none";
-                document.getElementById('gameModal').style.display = 'flex';
-            }
+            if (correctCount === 81) { isPaused = true; document.getElementById('modalTitle').innerText = "Winner! Time: " + document.getElementById('timer').innerText; document.getElementById('resumeBtn').style.display = 'none'; document.getElementById('gameModal').style.display = 'flex'; }
         }
 
         function onCellClick(cell) {
@@ -316,12 +292,7 @@
             saveGame();
         }
 
-        // Start
-        if (!loadGame()) {
-            newGame('normal');
-        } else {
-            startTimer();
-        }
+        if (!loadGame()) newGame('normal'); else startTimer();
     </script>
 </body>
 </html>
