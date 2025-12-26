@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - Haptic Edition</title>
+    <title>Pro Sudoku - High Contrast Edition</title>
     <style>
         :root {
             --bg-body: #f8f9fa; --bg-card: #ffffff; --text-main: #212529;
@@ -33,18 +33,18 @@
         
         .ui-btn { 
             background: var(--bg-card); border: 1px solid var(--cell-border); color: var(--text-main); 
-            padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 11px; font-weight: 500;
+            padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 500;
+            transition: all 0.2s;
         }
-        .ui-btn.active-picker { background-color: var(--val-user); color: white; border-color: var(--val-user); }
+        .ui-btn.active-picker { background-color: var(--val-user); color: #fff; border-color: var(--val-user); }
 
-        .timer-row { margin: 5px 0; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.1rem; flex-shrink: 0; }
+        .timer-row { margin-bottom: 5px; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
 
         #grid { 
             display: grid; grid-template-columns: repeat(9, clamp(30px, 10vw, 45px)); 
             grid-template-rows: repeat(9, clamp(30px, 10vw, 45px)); border: var(--thick-weight) solid var(--grid-border); 
             background-color: var(--grid-border); gap: 1px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-shrink: 0;
         }
-
         .cell { background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; cursor: pointer; font-weight: 400; }
         .cell:nth-child(3n) { border-right: var(--thick-weight) solid var(--grid-border); }
         .cell:nth-child(9n) { border-right: none; }
@@ -64,8 +64,17 @@
             border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
             display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
         }
-        .badge { position: absolute; top: 2px; right: 4px; font-size: 9px; color: var(--text-main); font-weight: 300; opacity: 0.7; }
-        .num-btn.active-num { background-color: var(--val-user); color: white; border-color: var(--val-user); }
+
+        /* Remainder Indicator Styles */
+        .badge { 
+            position: absolute; top: 2px; right: 4px; font-size: 9px; 
+            color: var(--text-main); font-weight: 300; opacity: 0.7; 
+        }
+        
+        /* High contrast for Active Picker Selection */
+        .num-btn.active-num { background-color: var(--val-user); color: #ffffff; border-color: var(--val-user); }
+        .num-btn.active-num .badge { color: #ffffff; opacity: 1; font-weight: 500; }
+        
         .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
         .num-btn.clear { flex: 1.1; color: var(--val-error); }
 
@@ -137,14 +146,10 @@
         let seconds = 0, timerInterval = null, isPaused = false;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // Haptic Feedback Logic
         function triggerHaptic(isError = false) {
             if ("vibrate" in navigator) {
-                if (isError) {
-                    navigator.vibrate([60, 50, 60]); // Double pulse for error
-                } else {
-                    navigator.vibrate(40); // Single mild pulse
-                }
+                if (isError) navigator.vibrate([60, 50, 60]);
+                else navigator.vibrate(40);
             }
         }
 
@@ -172,7 +177,11 @@
             localStorage.setItem('sudoku_theme', newTheme);
         }
 
-        function togglePickerMode() { isPickerMode = !isPickerMode; document.getElementById('pickerBtn').classList.toggle('active-picker', isPickerMode); heldNumber = null; clearHighlights(); updateNumpadUI(); }
+        function togglePickerMode() { 
+            isPickerMode = !isPickerMode; 
+            document.getElementById('pickerBtn').classList.toggle('active-picker', isPickerMode); 
+            heldNumber = null; clearHighlights(); updateNumpadUI(); 
+        }
         function clearHighlights() { document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match')); }
 
         function saveGame() {
@@ -288,9 +297,7 @@
                     cell.className = 'cell user-correct';
                 }
             });
-            triggerHaptic(false);
-            updateNumpadUI();
-            saveGame();
+            triggerHaptic(false); updateNumpadUI(); saveGame();
         }
 
         function onCellClick(cell) {
@@ -326,14 +333,12 @@
         function inputNumberIntoCell(cell, n) {
             if (cell.classList.contains('readonly')) return;
             const r = cell.dataset.r, c = cell.dataset.c;
-            if (n === 0) { 
-                cell.innerText = ''; cell.className = 'cell selected'; playSound(200); 
-            } else {
-                const isCorrect = (n == solution[r][c]); 
-                cell.innerText = n;
+            if (n === 0) { cell.innerText = ''; cell.className = 'cell selected'; playSound(200); }
+            else {
+                const isCorrect = (n == solution[r][c]); cell.innerText = n;
                 cell.className = `cell selected ${isCorrect ? 'user-correct' : 'user-error'}`;
                 playSound(isCorrect ? 600 : 150);
-                triggerHaptic(!isCorrect); // Haptic feedback
+                triggerHaptic(!isCorrect);
             }
             saveGame();
         }
