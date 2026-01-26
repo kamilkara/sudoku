@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - High Contrast Edition</title>
+    <title>Pro Sudoku - Smooth Picker</title>
     <style>
         :root {
             --bg-body: #f8f9fa; --bg-card: #ffffff; --text-main: #212529;
@@ -34,9 +34,8 @@
         .ui-btn { 
             background: var(--bg-card); border: 1px solid var(--cell-border); color: var(--text-main); 
             padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 500;
-            transition: all 0.2s;
         }
-        .ui-btn.active-picker { background-color: var(--val-user); color: #fff; border-color: var(--val-user); }
+        .ui-btn.active-picker { background-color: var(--val-user); color: white; border-color: var(--val-user); }
 
         .timer-row { margin-bottom: 5px; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
 
@@ -64,14 +63,12 @@
             border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
             display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
         }
-
-        /* Remainder Indicator Styles */
+        
         .badge { 
             position: absolute; top: 2px; right: 4px; font-size: 9px; 
             color: var(--text-main); font-weight: 300; opacity: 0.7; 
         }
         
-        /* High contrast for Active Picker Selection */
         .num-btn.active-num { background-color: var(--val-user); color: #ffffff; border-color: var(--val-user); }
         .num-btn.active-num .badge { color: #ffffff; opacity: 1; font-weight: 500; }
         
@@ -182,6 +179,7 @@
             document.getElementById('pickerBtn').classList.toggle('active-picker', isPickerMode); 
             heldNumber = null; clearHighlights(); updateNumpadUI(); 
         }
+
         function clearHighlights() { document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'hl-lane', 'hl-match')); }
 
         function saveGame() {
@@ -304,20 +302,29 @@
             if (isPaused) return;
             if (isPickerMode) {
                 if (cell.classList.contains('readonly') || (cell.innerText !== "" && cell.classList.contains('user-correct'))) {
-                    const clickedVal = parseInt(cell.innerText);
-                    const btn = document.getElementById(`btn-${clickedVal}`);
-                    if (btn && !btn.classList.contains('completed')) heldNumber = clickedVal;
-                } else if (heldNumber !== null) inputNumberIntoCell(cell, heldNumber);
+                    heldNumber = parseInt(cell.innerText);
+                } else if (heldNumber !== null) {
+                    inputNumberIntoCell(cell, heldNumber);
+                }
             }
-            highlight(cell); updateNumpadUI();
+            highlight(cell);
+            updateNumpadUI();
         }
 
         function highlight(cell) {
-            clearHighlights(); selectedCell = cell; cell.classList.add('selected');
-            const r = cell.dataset.r, c = cell.dataset.c, val = cell.innerText;
+            clearHighlights();
+            selectedCell = cell;
+            cell.classList.add('selected');
+            const r = cell.dataset.r, c = cell.dataset.c;
+            const val = cell.innerText;
+            
             document.querySelectorAll('.cell').forEach(item => {
-                if (item.dataset.r === r || item.dataset.c === c) item.classList.add('hl-lane');
-                if (val && item.innerText === val) item.classList.add('hl-match');
+                if (item.dataset.r === r || item.dataset.c === c) {
+                    item.classList.add('hl-lane');
+                }
+                if (val && item.innerText === val) {
+                    item.classList.add('hl-match');
+                }
             });
         }
 
@@ -325,17 +332,31 @@
             if (isPaused) return;
             if (isPickerMode && n !== 0) {
                 const btn = document.getElementById(`btn-${n}`);
-                if (!btn.classList.contains('completed')) heldNumber = n;
-            } else if (selectedCell) inputNumberIntoCell(selectedCell, n);
-            updateNumpadUI(); if (selectedCell) highlight(selectedCell);
+                if (!btn.classList.contains('completed')) {
+                    heldNumber = n;
+                    // Highlight numbers matching the one just picked from numpad
+                    clearHighlights();
+                    document.querySelectorAll('.cell').forEach(item => {
+                        if (n && item.innerText == n) item.classList.add('hl-match');
+                    });
+                }
+            } else if (selectedCell) {
+                inputNumberIntoCell(selectedCell, n);
+            }
+            updateNumpadUI();
+            if (!isPickerMode && selectedCell) highlight(selectedCell);
         }
 
         function inputNumberIntoCell(cell, n) {
             if (cell.classList.contains('readonly')) return;
             const r = cell.dataset.r, c = cell.dataset.c;
-            if (n === 0) { cell.innerText = ''; cell.className = 'cell selected'; playSound(200); }
-            else {
-                const isCorrect = (n == solution[r][c]); cell.innerText = n;
+            if (n === 0) { 
+                cell.innerText = ''; 
+                cell.className = 'cell selected'; 
+                playSound(200); 
+            } else {
+                const isCorrect = (n == solution[r][c]); 
+                cell.innerText = n;
                 cell.className = `cell selected ${isCorrect ? 'user-correct' : 'user-error'}`;
                 playSound(isCorrect ? 600 : 150);
                 triggerHaptic(!isCorrect);
