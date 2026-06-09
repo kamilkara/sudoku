@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>Pro Sudoku - Smooth Picker</title>
+    <title>Pro Sudoku - Production Edition</title>
     <style>
         :root {
             --bg-body: #f8f9fa; --bg-card: #ffffff; --text-main: #212529;
@@ -37,7 +37,9 @@
         }
         .ui-btn.active-picker { background-color: var(--val-user); color: white; border-color: var(--val-user); }
 
-        .timer-row { margin-bottom: 5px; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
+        .meta-row { display: flex; width: 100%; max-width: 450px; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .timer-row { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 1.2rem; }
+        .strikes-row { color: var(--val-error); font-weight: bold; font-size: 1.1rem; letter-spacing: 2px; }
 
         #grid { 
             display: grid; grid-template-columns: repeat(9, clamp(30px, 10vw, 45px)); 
@@ -63,15 +65,8 @@
             border-radius: 6px; font-size: 1.1rem; font-weight: 600; border: 1px solid var(--cell-border); 
             display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
         }
-        
-        .badge { 
-            position: absolute; top: 2px; right: 4px; font-size: 9px; 
-            color: var(--text-main); font-weight: 300; opacity: 0.7; 
-        }
-        
+        .badge { position: absolute; top: 2px; right: 4px; font-size: 9px; color: var(--text-main); font-weight: 300; opacity: 0.7; }
         .num-btn.active-num { background-color: var(--val-user); color: #ffffff; border-color: var(--val-user); }
-        .num-btn.active-num .badge { color: #ffffff; opacity: 1; font-weight: 500; }
-        
         .num-btn.completed { background-color: transparent; color: #999; opacity: 0.2; pointer-events: none; border-style: dashed; }
         .num-btn.clear { flex: 1.1; color: var(--val-error); }
 
@@ -98,11 +93,15 @@
         </div>
     </div>
 
-    <div class="timer-row" id="timer">00:00</div>
+    <div class="meta-row">
+        <div class="timer-row" id="timer">00:00</div>
+        <div class="strikes-row" id="strikes">❤️❤️❤️</div>
+    </div>
+
     <div id="grid"></div>
 
     <div id="autoFinishContainer">
-        <button class="finish-btn" onclick="autoFinishBoard()">🪄 Finish Board (8 left)</button>
+        <button class="finish-btn" onclick="autoFinishBoard()">🪄 Finish Board</button>
     </div>
 
     <div class="numpad" id="numpad">
@@ -139,7 +138,8 @@
     </div>
 
     <script>
-        let solution = [], selectedCell = null, readonlyMap = [], isPickerMode = false, heldNumber = null;
+        let solution = [], selectedCell = null, readonlyMap = [];
+        let isPickerMode = false, heldNumber = null, strikes = 3;
         let seconds = 0, timerInterval = null, isPaused = false;
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -163,6 +163,12 @@
             document.getElementById('timer').innerText = `${mins}:${secs}`;
         }
 
+        function updateStrikesDisplay() {
+            let heartString = "";
+            for(let i=0; i<3; i++) heartString += (i < strikes) ? "❤️" : "🖤";
+            document.getElementById('strikes').innerText = heartString;
+        }
+
         function pauseGame() { isPaused = true; document.getElementById('modalTitle').innerText = "Paused"; document.getElementById('resumeBtn').style.display = 'block'; document.getElementById('gameModal').style.display = 'flex'; }
         function resumeGame() { isPaused = false; document.getElementById('gameModal').style.display = 'none'; }
         function showNewGameModal() { document.getElementById('modalTitle').innerText = "New Game"; document.getElementById('resumeBtn').style.display = 'none'; document.getElementById('gameModal').style.display = 'flex'; }
@@ -184,7 +190,7 @@
 
         function saveGame() {
             const currentDigits = Array.from(document.querySelectorAll('.cell')).map(c => c.innerText);
-            localStorage.setItem('sudoku_save_data', JSON.stringify({ solution, puzzleState: currentDigits, readonlyMap, seconds }));
+            localStorage.setItem('sudoku_save_data', JSON.stringify({ solution, puzzleState: currentDigits, readonlyMap, seconds, strikes }));
         }
 
         function loadGame() {
@@ -193,8 +199,8 @@
             const savedData = localStorage.getItem('sudoku_save_data');
             if (savedData) {
                 const data = JSON.parse(savedData);
-                solution = data.solution; readonlyMap = data.readonlyMap; seconds = data.seconds || 0;
-                updateTimerDisplay(); renderSaved(data.puzzleState); return true;
+                solution = data.solution; readonlyMap = data.readonlyMap; seconds = data.seconds || 0; strikes = data.strikes !== undefined ? data.strikes : 3;
+                updateTimerDisplay(); updateStrikesDisplay(); renderSaved(data.puzzleState); return true;
             }
             return false;
         }
@@ -207,9 +213,29 @@
             osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duration);
         }
 
+        function playVictorySound() {
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((note, i) => { setTimeout(() => playSound(note, 0.4), i * 150); });
+        }
+
+        function playGameOverSound() {
+            const notes = [293.66, 220.00, 146.83];
+            notes.forEach((note, i) => { setTimeout(() => playSound(note, 0.5), i * 200); });
+        }
+
+        function gameOver() {
+            isPaused = true;
+            playGameOverSound();
+            document.getElementById('modalTitle').innerText = "Game Over (3 Mistakes)";
+            document.getElementById('resumeBtn').style.display = 'none';
+            document.getElementById('gameModal').style.display = 'flex';
+            localStorage.removeItem('sudoku_save_data');
+        }
+
         function newGame(diff) {
             document.getElementById('gameModal').style.display = 'none';
-            isPaused = false; seconds = 0; updateTimerDisplay();
+            isPaused = false; seconds = 0; strikes = 3;
+            updateTimerDisplay(); updateStrikesDisplay();
             const clues = diff === 'easy' ? 44 : diff === 'normal' ? 36 : diff === 'hard' ? 26 : 19;
             let board = Array.from({length: 9}, () => Array(9).fill(0));
             solve(board); solution = JSON.parse(JSON.stringify(board));
@@ -262,12 +288,15 @@
 
         function updateNumpadUI() {
             const counts = {}; for (let i = 1; i <= 9; i++) counts[i] = 0;
-            let correctCount = 0; let totalFilled = 0;
+            let totalCorrectCount = 0; 
+            let emptyCellCount = 0;
+
             document.querySelectorAll('.cell').forEach(cell => {
                 const val = parseInt(cell.innerText), r = cell.dataset.r, c = cell.dataset.c;
-                if (val && val == solution[r][c]) { counts[val]++; correctCount++; }
-                if (val) totalFilled++;
+                if (!cell.innerText) emptyCellCount++;
+                if (val && val == solution[r][c]) { counts[val]++; totalCorrectCount++; }
             });
+
             for (let i = 1; i <= 9; i++) {
                 const btn = document.getElementById(`btn-${i}`);
                 const badge = document.getElementById(`count-${i}`);
@@ -277,13 +306,18 @@
                 if (remaining === 0) { btn.classList.add('completed'); if (heldNumber === i) heldNumber = null; }
                 else if (isPickerMode && heldNumber === i) btn.classList.add('active-num');
             }
-            const remainToFinish = 81 - totalFilled;
-            document.getElementById('autoFinishContainer').style.display = (remainToFinish === 8) ? 'block' : 'none';
-            if (correctCount === 81) { 
+
+            // Persistence Tweak: Persistent check for last 8 missing cells
+            document.getElementById('autoFinishContainer').style.display = (emptyCellCount <= 8 && emptyCellCount > 0) ? 'block' : 'none';
+
+            // Win Tweak: Requires ALL 81 boxes to be perfectly valid to trigger complete pop-up
+            if (totalCorrectCount === 81) { 
                 isPaused = true; 
+                playVictorySound();
                 document.getElementById('modalTitle').innerText = "Winner! Time: " + document.getElementById('timer').innerText; 
                 document.getElementById('resumeBtn').style.display = 'none'; 
                 document.getElementById('gameModal').style.display = 'flex'; 
+                localStorage.removeItem('sudoku_save_data');
             }
         }
 
@@ -307,24 +341,15 @@
                     inputNumberIntoCell(cell, heldNumber);
                 }
             }
-            highlight(cell);
-            updateNumpadUI();
+            highlight(cell); updateNumpadUI();
         }
 
         function highlight(cell) {
-            clearHighlights();
-            selectedCell = cell;
-            cell.classList.add('selected');
-            const r = cell.dataset.r, c = cell.dataset.c;
-            const val = cell.innerText;
-            
+            clearHighlights(); selectedCell = cell; cell.classList.add('selected');
+            const r = cell.dataset.r, c = cell.dataset.c, val = cell.innerText;
             document.querySelectorAll('.cell').forEach(item => {
-                if (item.dataset.r === r || item.dataset.c === c) {
-                    item.classList.add('hl-lane');
-                }
-                if (val && item.innerText === val) {
-                    item.classList.add('hl-match');
-                }
+                if (item.dataset.r === r || item.dataset.c === c) item.classList.add('hl-lane');
+                if (val && item.innerText === val) item.classList.add('hl-match');
             });
         }
 
@@ -333,9 +358,7 @@
             if (isPickerMode && n !== 0) {
                 const btn = document.getElementById(`btn-${n}`);
                 if (!btn.classList.contains('completed')) {
-                    heldNumber = n;
-                    // Highlight numbers matching the one just picked from numpad
-                    clearHighlights();
+                    heldNumber = n; clearHighlights();
                     document.querySelectorAll('.cell').forEach(item => {
                         if (n && item.innerText == n) item.classList.add('hl-match');
                     });
@@ -343,23 +366,27 @@
             } else if (selectedCell) {
                 inputNumberIntoCell(selectedCell, n);
             }
-            updateNumpadUI();
-            if (!isPickerMode && selectedCell) highlight(selectedCell);
+            updateNumpadUI(); if (!isPickerMode && selectedCell) highlight(selectedCell);
         }
 
         function inputNumberIntoCell(cell, n) {
             if (cell.classList.contains('readonly')) return;
             const r = cell.dataset.r, c = cell.dataset.c;
             if (n === 0) { 
-                cell.innerText = ''; 
-                cell.className = 'cell selected'; 
-                playSound(200); 
+                cell.innerText = ''; cell.className = 'cell selected'; playSound(200); 
             } else {
                 const isCorrect = (n == solution[r][c]); 
                 cell.innerText = n;
                 cell.className = `cell selected ${isCorrect ? 'user-correct' : 'user-error'}`;
                 playSound(isCorrect ? 600 : 150);
                 triggerHaptic(!isCorrect);
+                
+                // Strike Tweak: Handle mistake count deduction
+                if (!isCorrect) {
+                    strikes--;
+                    updateStrikesDisplay();
+                    if (strikes <= 0) { gameOver(); return; }
+                }
             }
             saveGame();
         }
